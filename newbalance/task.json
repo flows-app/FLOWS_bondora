@@ -1,0 +1,29 @@
+{
+    "id": "FLOWS/bondora/newbalance",
+    "lambda": "lambda-arn",
+    "role": "iam-arn",
+    "input": {
+        "examples": {
+            "sampleobject": {
+                "account":{
+                    "username":"user1",
+                    "password":"password1"
+                }
+            }
+
+        }
+    },
+    "output": {
+        "examples": {
+            "result": {
+                "balance": 1000,
+                "available": 500,
+                "invested": 500
+            }
+        }
+    },
+    "type": "poller",
+    "description": "triggers whenever a new account balance is available",
+    "icon": "https://flows.app/favicon.png",
+    "billing": "standard"
+}
