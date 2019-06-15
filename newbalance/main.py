@@ -4,6 +4,7 @@ import http.cookiejar
 import json
 import datetime
 from urllib.request import Request, urlopen
+from urllib.error import HTTPError
 
 def handler(event, context):
     username = event['account']['username']
@@ -24,29 +25,33 @@ def handler(event, context):
                                        "returnUrl":"/en",
                                        "Email":username,
                                        "Password":password}).encode("utf-8")
+    try:
+      req = Request('https://www.bondora.com/en/login',
+                  data=postdata,
+                  method='POST')
 
-    req = Request('https://www.bondora.com/en/login',
-                data=postdata,
-                method='POST')
+      response = opener.open(req)
+      html = response.read()
 
-    response = opener.open(req)
-    html = response.read()
+      req = Request('https://www.bondora.com/en/dashboard/overviewnumbers/',
+        headers={'User-Agent': "Mozilla/5.0 (Windows NT 5.1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/28.0.1500.72 Safari/537.36"},
+        method='GET')
 
-    req = Request('https://www.bondora.com/en/dashboard/overviewnumbers/',
-      headers={'User-Agent': "Mozilla/5.0 (Windows NT 5.1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/28.0.1500.72 Safari/537.36"},
-      method='GET')
+      html = opener.open(req).read()
+      x = json.loads(html)
+      balance = x['Stats'][0]['Value'].replace('€','').replace(',','')
+      available = x['Stats'][4]['Value'].replace('€','').replace(',','')
+      invested = x['Stats'][3]['Value'].replace('€','').replace(',','')
 
-    html = opener.open(req).read()
-    x = json.loads(html)
-    balance = x['Stats'][0]['Value'].replace('€','').replace(',','')
-    available = x['Stats'][4]['Value'].replace('€','').replace(',','')
-    invested = x['Stats'][3]['Value'].replace('€','').replace(',','')
-
-    result = {"balance":balance,"available":available,"invested":invested}
-    resultStr = json.dumps(result)
-    customcontext = context.client_context.custom
-    if "lastvalue" in customcontext and resultStr == customcontext['lastvalue']:
+      result = {"balance":balance,"available":available,"invested":invested}
+      resultStr = json.dumps(result)
+      customcontext = context.client_context.custom
+      if "lastvalue" in customcontext and resultStr == customcontext['lastvalue']:
+        return
+      else:
+        result['dedupid']=resultStr
+        return result
+    except HTTPError as e:
+      content = e.read()
+      print(content)
       return
-    else:
-      result['dedupid']=resultStr
-      return result
